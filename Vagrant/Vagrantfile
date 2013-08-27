@@ -1,0 +1,38 @@
+#
+# Vagrant template for DEV machine
+#
+# @author Thierry 'Akarun' Lagasse
+# @since August 2013
+#
+#  ============================================================================
+
+# Configuration 
+name = 'projectname'    # VM name
+host = 'project.dev'    # Web access
+ip = '10.0.0.6'         # IP for private network
+
+#  ----------------------------------------------------------------------------
+Vagrant.configure("2") do |config|
+    config.vm.box = "raring32"
+    config.vm.box_url = "http://cloud-images.ubuntu.com/vagrant/raring/current/raring-server-cloudimg-i386-vagrant-disk1.box"
+    
+    config.vm.hostname = host
+    config.vm.network :private_network, ip: ip
+
+    # Les sources du projet sont dans WWW (Host)
+    config.vm.synced_folder "www", "/home/vagrant/www", :owner => "vagrant", :group => 'www-data', :extra => 'dmode=775,fmode=774'
+    
+    # Installation de la machine et des paquets
+    config.vm.provision :shell, :path => "provisions/vm.provision.sh"
+
+    # Creation du projet Laravel ; seulement si pas encore fait
+    #if not File.exists?('www/artisan') and File.exists?('provisions/laravel.provision.sh') then
+    #    config.vm.provision :shell, :path => "provisions/laravel.provision.sh"
+    #end
+
+    # Modification de la VM
+    config.vm.provider "virtualbox" do |v|
+        v.name = name
+        v.gui = true
+    end
+end
