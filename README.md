@@ -1,3 +1,3 @@
 # Bash Tools
 
-> Some use(full|less) Bash scripts.
+> Some use(ful|less) Bash scripts.
