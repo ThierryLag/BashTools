@@ -12,11 +12,10 @@ function echo_failure { echo -ne "\033[60G\033[0;39m[ \033[1;31mFAILED\033[0;39m
 function echo_warning { echo -ne "\033[60G\033[0;39m[ \033[1;33mWARNING\033[0;39m ]\n\r"; }
 function echo_exists  { echo -ne "\033[60G\033[0;39m[   \033[1;34mDONE\033[0;39m  ]\n\r"; }
 
-echo "================================================================================"
-
 # =============================================================================
+printf '%0.1s' "-"{1..80}
 
-# Update (if older than ...)
+# Update packages (if older than ...)
 TIME_UPDATE=$(( $(date +%s) - $(stat -c %Y /var/lib/apt/periodic/update-success-stamp) )); 
 
 if [[ $TIME_UPDATE -gt 3600 ]]; then

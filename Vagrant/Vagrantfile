@@ -19,20 +19,25 @@ Vagrant.configure("2") do |config|
     config.vm.hostname = host
     config.vm.network :private_network, ip: ip
 
-    # Les sources du projet sont dans WWW (Host)
-    config.vm.synced_folder "www", "/home/vagrant/www", :owner => "vagrant", :group => 'www-data', :extra => 'dmode=775,fmode=774'
+    # Les sources du projet sont dans WWW 
+    # (le repertoire n'existe pas encore lors du premier UP)
+    if File.directory?('www') then
+        config.vm.synced_folder "www", "/home/vagrant/www", :owner => "vagrant", :group => 'www-data', :extra => 'dmode=775,fmode=774'
+    end
     
     # Installation de la machine et des paquets
-    config.vm.provision :shell, :path => "provisions/vm.provision.sh"
+    if File.exists?('provisions/vm.provision.sh') then
+        config.vm.provision :shell, :path => "provisions/vm.provision.sh", :args => name
+    end
 
     # Creation du projet Laravel ; seulement si pas encore fait
-    #if not File.exists?('www/artisan') and File.exists?('provisions/laravel.provision.sh') then
-    #    config.vm.provision :shell, :path => "provisions/laravel.provision.sh"
-    #end
+    if File.exists?('provisions/laravel.provision.sh') then
+        config.vm.provision :shell, :path => "provisions/laravel.provision.sh", :args => name
+    end
 
     # Modification de la VM
     config.vm.provider "virtualbox" do |v|
-        v.name = name
+        v.name = name.sub(/^(\w)/) {|s| s.capitalize}
         v.gui = true
     end
 end
