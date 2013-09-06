@@ -6,13 +6,14 @@
 # @since:   August 2013
 #
 # =============================================================================
-# You can chnage these default variables according your configuration
+# You can change these default variables according your configuration
 DEFAULT_PROJECTPATH=`pwd`
-DEFAULT_VHOST="${HOME}/sites/.vhosts"
+DEFAULT_VHOST="${DEFAULT_PROJECTPATH}/.vhosts"
 
 # You can pass the "projectname" as the first args
 DEFAULT_PROJECTNAME="laravel"
-[ -n $1 ] && DEFAULT_PROJECTNAME='$1'
+DEFAULT_DOMAIN="midearth.dev"
+[ -n $1 ] && DEFAULT_PROJECTNAME="$1"
 
 # No need to change these variables, the script will ask you a specific entry for each.
 MYSQL_ADMIN=$(who am i | awk '{print $1}')
@@ -31,7 +32,7 @@ function echo_done    { echo -ne "$1\033[60G\033[0;39m[   \033[1;34mDONE\033[0;3
 # =============================================================================
 printf '%0.1s' "-"{1..80}
 
-while [ ! -d $PROJECTPATH ]
+while [ ! -d $PROJECTPATH ]; do
 	echo -e "Provide the directory that contains projects [$DEFAULT_PROJECTPATH] : " ; read PROJECTPATH
 	[ -z $PROJECTPATH ] && PROJECTPATH=$DEFAULT_PROJECTPATH
 done 
@@ -41,11 +42,14 @@ if [ -n $1 ]; then
 	[ -z $PROJECTNAME ] && PROJECTNAME=$DEFAULT_PROJECTNAME
 fi
 
-DEFAULT_DOMAIN="${PROJECTNAME}.$(hostname)"
+DEFAULT_DOMAIN="${PROJECTNAME,,}.${DEFAULT_DOMAIN,,}"
 echo -e "\nEnter the domain name [$DEFAULT_DOMAIN] : " ; read DOMAIN
 [ -z $DOMAIN ] && DOMAIN=$DEFAULT_DOMAIN
 
 # -----------------------------------------------------------------------------
+
+DEFAULT_MYSQLBASE="${PROJECTNAME}"
+DEFAULT_MYSQLUSER="${PROJECTNAME}admin"
 
 echo -e "\nEnter MySQL database name [$DEFAULT_MYSQLBASE] or [none] : " ; read MYSQLBASE
 [ -z $MYSQLBASE ] && MYSQLBASE=$DEFAULT_MYSQLBASE
@@ -63,22 +67,23 @@ fi
 #   Laravel Project (create empty project)
 #
 echo -e "Creating Laravel project \"$PROJECTNAME\""
-pushd $PROJECTPATH
-composer create-project -q --no-progress laravel/laravel $PROJECTNAME
+
+cd $PROJECTPATH
+composer create-project --no-progress --prefer-dist laravel/laravel $PROJECTPATH/$PROJECTNAME
 if [ $? -ne 0 ]; then
 	echo_failure
 	echo -e "Composer was unable to get sources in : $PROJECTPATH/$PROJECTNAME"
 fi
 
-echo_success
-pushd $PROJECTNAME
+echo_success "\t- Sources intalled"
+pushd $PROJECTPATH/$PROJECTNAME
 
 # =============================================================================
 #
 #   Laravel configuration
 #
-echo -e "\t- Creating application key"
-php artisan key:generate && echo_success || echo_failure
+#echo -e "\t- Creating application key"
+#php artisan key:generate && echo_success || echo_failure
 
 # =============================================================================
 #
@@ -90,7 +95,7 @@ if [ ! -d $DEFAULT_VHOST ]; then
 fi
 
 echo -e "\t- Creating Vhost"
-cat > $DEFAULT_VHOST/$PROJECTNAME.conf <<EOL
+cat > $DEFAULT_VHOST/$PROJECTNAME.conf <<EOF
 server {
 	listen 80;
 	#listen 443 ssl;
@@ -113,29 +118,29 @@ server {
 		include fastcgi_params;
 	}
 }
-EOL
+EOF
 echo_done
 
-echo -e "\t- Restarting NginX"
-service nginx restart && echo_success || echo_failure
+echo -en "\t- Restarting NginX"
+sudo /etc/init.d/nginx restart && echo_success || echo_failure
 
 # =============================================================================
 #
 #   GIT
 #
-echo -e "\t- Prepare GIT configuration"
+echo -en "\t- Prepare GIT configuration"
 
 rm -Rf .gitattributes license.txt CONTRIBUTING.md readme.md public/packages
-cat > .gitignore <<EOL
+cat > .gitignore <<EOF
 *.sublime*
 logs
 storage/(sessions|views|logs|database|cache|work)/*
 laravel/test/storage/(sessions|views|logs|cache)/*
-EOL
+EOF
 echo_done
 
 if [ -n $(which git) ]; then
-	echo -e "\t- GIT init"
+	echo -en "\t- GIT init"
 	git init && git add . && git commit -q -m "Initial commit"
 
 	if [ $? -ne 0 ]; then
@@ -143,7 +148,7 @@ if [ -n $(which git) ]; then
 	else
 		echo_success
 
-		echo -e "\t- GIT branching"
+		echo -en "\t- GIT branching"
 		git branch testing && git branch develop && echo_success || echo_failure
 	fi
 fi
